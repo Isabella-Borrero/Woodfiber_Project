@@ -1,0 +1,62 @@
+---
+title: "How.psB.and.psF.were.made"
+author: "Isabella Borrero"
+date: "2025-10-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr) 
+library(tidyr)
+library(ggplot2)
+library(phyloseq)
+library(httr)
+library(devtools)
+library(decontam)
+library(gridExtra)
+library(tibble)
+library(Biostrings); packageVersion("Biostrings")
+library(vegan) 
+```
+
+```{r}
+#Creatinging OTU and TAX
+OTU = otu_table(as.matrix(stB), taxa_are_rows = FALSE)
+TAX = tax_table(as.matrix(taxB))
+
+OTU.f = otu_table(as.matrix(stF), taxa_are_rows = FALSE)
+TAX.f = tax_table(as.matrix(taxF_olddb))
+```
+
+```{r Creating Bacteria Phyloseq Object}
+psB <- phyloseq(
+  otu_table(as.matrix(OTU), taxa_are_rows=FALSE), 
+  tax_table(as.matrix(TAX)), 
+  sample_data(data.frame(BacteriaFiltData, row.names=BacteriaFiltData$Merge.ID))  
+)
+
+psF <- phyloseq(
+  otu_table(as.matrix(OTU.f), taxa_are_rows=FALSE), 
+  tax_table(as.matrix(TAX.f)), 
+  sample_data(data.frame(Fungi.filt, row.names=Fungi.filt$Merge.ID))  
+)
+```
+
+#store the DNA sequences of ASVs in the refseq slot 
+```{r  short names for ASVs}
+dna <- Biostrings::DNAStringSet(taxa_names(psB))
+names(dna) <- taxa_names(psB)
+psB <- merge_phyloseq(psB, dna)
+taxa_names(psB) <- paste0("ASV", seq(ntaxa(psB)))
+psB
+saveRDS(psB, "~/Desktop/psB.RDS")
+
+dna.f <- Biostrings::DNAStringSet(taxa_names(psF))
+names(dna.f) <- taxa_names(psF)
+psF <- merge_phyloseq(psF, dna.f)
+taxa_names(psF) <- paste0("ASV", seq(ntaxa(psF)))
+psF
+
+saveRDS(psF, "~/Desktop/psF.RDS")
+```
